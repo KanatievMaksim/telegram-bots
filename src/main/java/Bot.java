@@ -1,9 +1,13 @@
 import dao.WordDAO;
 import entities.Word;
+import lombok.SneakyThrows;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
@@ -14,14 +18,16 @@ public class Bot extends TelegramLongPollingBot {
     private static SendMessage sendMessage;
     private static long chat_id;
     private ReplyKeyboardMarkup replyKeyboardMarkup;
+    private InlineKeyboardMarkup inlineKeyboardMarkup;
+    private CallbackQuery callbackQuery;
     private WordDAO wordDAO;
     private Word word;
 
     public Bot(){
         replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        inlineKeyboardMarkup = new InlineKeyboardMarkup();
         wordDAO = new WordDAO();
     }
-
 
     @Override
     public void onUpdateReceived(Update update) {
@@ -29,9 +35,10 @@ public class Bot extends TelegramLongPollingBot {
             update.getUpdateId();
             chat_id = update.getMessage().getChatId();
             sendMessage = new SendMessage().setChatId(chat_id);
-            sendMessage.enableMarkdown(true);
-            String text = update.getMessage().getText();
-            commandSwitcher(text);
+            System.out.println("get message(from update) -> " + update.getMessage());
+            startCommandSwitcher(update);
+        } else if (update.hasCallbackQuery()) {
+            difficultCommandSwitcher(update);
         }
     }
 
@@ -45,31 +52,21 @@ public class Bot extends TelegramLongPollingBot {
         return "913726033:AAFE_RYPjagMFpdBGLdczRRKtjQbABDf-jE";
     }
 
-    private void commandSwitcher(String text){
+    private void startCommandSwitcher(Update update){
+        String text = update.getMessage().getText();
         switch(text){
             case "/start":
                 sayHelloAndSetButtons();
                 break;
             case "Тест":
-                sendMsg("Выберите сложность:");
                 setDifficultButtons();
+                sendMsg("Выберите сложность:");
+                System.out.println("get message from TEST CASE -> " + update.getMessage().getText());
                 break;
-
             case "Обучение":
-                sendMsg("Выберите сложность:");
                 setDifficultButtons();
-                break;
-            case "Просто слова":
-                sendMsg("Приступим!");
-                setTestButtons();
-                word = wordDAO.getRandomWordToLearn();
-
-                break;
-            case "Фразовые глаголы":
-                //TODO
-                break;
-            case "Все вместе":
-                //TODO
+                sendMsg("Выберите сложность:");
+                System.out.println("Learn -> " + text);
                 break;
             case "Повторить слова":
                 //TODO
@@ -83,6 +80,32 @@ public class Bot extends TelegramLongPollingBot {
             default:
                 sendMsg("Выберите один из вариантов!");
         }
+    }
+
+    private void difficultCommandSwitcher(Update update) {
+        String difficult = update.getCallbackQuery().getData();
+        switch (difficult){
+            case "Просто слова":
+                setTestButtons();
+                sendMsg("Приступим!");
+                startWordQuiz(update);
+                break;
+            case "Фразовые глаголы":
+                break;
+            case "Все вместе":
+                break;
+        }
+    }
+
+    private  void startWordQuiz(Update update) {
+
+        word = wordDAO.getRandomWordToLearn();
+        System.out.println("word toString -> " + word.toString());
+        sendMsg(word.toString());
+    }
+
+    private void startPhraseQuiz(){
+
     }
 
     private String showWord(){
@@ -128,37 +151,30 @@ public class Bot extends TelegramLongPollingBot {
 
         List<KeyboardRow> keyboard = new ArrayList<>();
         KeyboardRow keyboardFirstRow = new KeyboardRow();
-        KeyboardRow keyboardSecondRow = new KeyboardRow();
-        KeyboardRow keyboardThirdRow = new KeyboardRow();
 
-        keyboardFirstRow.add("Старт");
+        keyboardFirstRow.add("Пропустить слово");
         keyboardFirstRow.add("Стоп");
-        keyboardSecondRow.add("Перевод слова");
-        keyboardSecondRow.add("Пропустить слово");
-        keyboardThirdRow.add("Помощь");
 
         keyboard.add(keyboardFirstRow);
-        keyboard.add(keyboardSecondRow);
-        keyboard.add(keyboardThirdRow);
 
         replyKeyboardMarkup.setKeyboard(keyboard);
     }
 
     private void setDifficultButtons(){
-        setKeyboardProps();
 
-        List<KeyboardRow> keyboard = new ArrayList<>();
-        KeyboardRow keyboardFirstRow = new KeyboardRow();
-        KeyboardRow keyboardSecondRow = new KeyboardRow();
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        List<InlineKeyboardButton> keyboardFirstRow = new ArrayList<>();
+        List<InlineKeyboardButton> keyboardSecondRow = new ArrayList<>();
 
-        keyboardFirstRow.add("Просто слова");
-        keyboardFirstRow.add("Фразовые глаголы");
-        keyboardSecondRow.add("Все вместе");
+        keyboardFirstRow.add(new InlineKeyboardButton().setText("Просто слова").setCallbackData("Просто слова"));
+        keyboardFirstRow.add(new InlineKeyboardButton().setText("Фразовые глаголы").setCallbackData("Фразовые глаголы"));
+        keyboardSecondRow.add(new InlineKeyboardButton().setText("Все вместе").setCallbackData("Все вместе"));
 
         keyboard.add(keyboardFirstRow);
         keyboard.add(keyboardSecondRow);
 
-        replyKeyboardMarkup.setKeyboard(keyboard);
+        inlineKeyboardMarkup.setKeyboard(keyboard);
+        sendMessage.setReplyMarkup(inlineKeyboardMarkup);
     }
 
     private void sendMsg(String message){

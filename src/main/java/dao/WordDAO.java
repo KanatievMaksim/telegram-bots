@@ -8,6 +8,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class WordDAO {
@@ -25,7 +26,7 @@ public class WordDAO {
             int id = rs.getInt("id");
             String word = rs.getString("word");
             String wordType = rs.getString("word_type");
-            String[] examples = rs.getString("examples").split("•");
+            String[] examples = rs.getString("examples") != null ? rs.getString("examples").split("•"): null;
             String[] translate = rs.getString("translation").split("•"); //TODO make sth w/ translation
             return new Word(id, word, wordType, examples, translate);
         }
@@ -38,8 +39,8 @@ public class WordDAO {
         ps.setInt(2, word.getId());
         ps.setString(3, word.getWord());
         ps.setString(4, word.getType());
-        ps.setString(5, word.getExamples().toString());
-        ps.setString(6, word.getTranslation().toString());
+        ps.setString(5, Arrays.toString(word.getExamples()));
+        ps.setString(6, Arrays.toString(word.getTranslation()));
         ps.executeUpdate();
     }
 

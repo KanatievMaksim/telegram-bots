@@ -16,5 +16,6 @@
     <orderEntry type="library" name="Maven: org.apache.pdfbox:fontbox:2.0.13" level="project" />
     <orderEntry type="library" name="Maven: commons-logging:commons-logging:1.2" level="project" />
     <orderEntry type="library" name="Maven: org.projectlombok:lombok:1.18.10" level="project" />
+    <orderEntry type="library" name="Maven: org.xerial:sqlite-jdbc:3.31.1" level="project" />
   </component>
 </module>
